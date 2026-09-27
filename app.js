@@ -63,7 +63,6 @@ const authenticationToken = (request, response, next) => {
         )
 
         request.username = payload.username
-        console.log(payload)
         next()
     } catch (error) {
         return response.status(401).send("Invalid JWT Token")
@@ -349,7 +348,7 @@ app.post('/user/tweets/', authenticationToken, async (request, response) => {
     const tweetContent = request.body
     const { tweet } = tweetContent
     const dbUserIdQ = `SELECT user_id FROM user WHERE username = ?;`
-    const dbUserId = await db.get(dbUserIdQ, request.username)
+    const dbUserId = await db.get(dbUserIdQ, [request.username])
     const createTweetQ = `INSERT INTO tweet (tweet, user_id, date_time) VALUES (?, ?, datetime('now'));`
     await db.run(createTweetQ, [tweet, dbUserId.user_id])
     response.send('Created a Tweet')

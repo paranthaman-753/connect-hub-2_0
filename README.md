@@ -248,6 +248,7 @@ social-connect-REST_API/
 ├── package.json            # Project metadata and dependencies
 ├── package-lock.json       # Dependency lock file
 ├── .env                    # Environment variables (JWT_SECRET) — not committed to git
+├── .env.example            # Example environment file for local setup
 ├── .gitignore              # Git ignore rules
 ├── app.http                # REST Client test file for VS Code
 ├── diagrams/
@@ -339,8 +340,6 @@ For complete API documentation with request/response examples, error codes, and 
 
 > **Note:** These features are **not currently implemented**. They are suggestions for future development.
 
-- **Add `module.exports = app`** to export the Express instance for testing
-- **Add a `start` script** in `package.json` (e.g., `"start": "node app.js"`)
 - **Input validation** — Validate request body fields (e.g., check for empty username/tweet, valid gender values)
 - **Pagination** — Add query parameter-based pagination for feed, followers, and tweet lists
 - **User profile endpoint** — `GET /user/profile/` to retrieve the logged-in user's own profile
