@@ -1,0 +1,581 @@
+openapi: 3.0.3
+
+info:
+  title: Twitter Clone REST API
+  description: |
+    A backend REST API that replicates core Twitter functionality — user registration,
+    authentication, tweeting, following, liking, and replying — built with Node.js,
+    Express.js, SQLite, bcrypt, and JWT.
+
+    ## Authentication
+    All endpoints except `/register/` and `/login/` require a valid JWT Bearer token
+    in the `Authorization` header. Obtain the token by calling `POST /login/` with valid
+    credentials, then include it as `Authorization: Bearer <token>`.
+  version: 1.0.0
+  license:
+    name: ISC
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+
+tags:
+  - name: Authentication
+    description: User registration and login
+  - name: User
+    description: User profile data — following and followers lists
+  - name: Feed
+    description: Tweet feed from followed users
+  - name: Tweets
+    description: Create, read, and delete tweets
+  - name: Engagement
+    description: Likes and replies on tweets
+
+paths:
+  /register/:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      description: |
+        Registers a new user account. The password is hashed using bcrypt (salt rounds: 10)
+        before being stored in the database. Validates that the username is unique and the
+        password is at least 6 characters long.
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+            example:
+              username: adam_richard
+              password: richard_567
+              name: Adam Richard
+              gender: male
+      responses:
+        "200":
+          description: User registered successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: User created successfully
+        "400":
+          description: Registration failed
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                userExists:
+                  summary: Username already taken
+                  value: User already exists
+                shortPassword:
+                  summary: Password too short
+                  value: Password is too short
+
+  /login/:
+    post:
+      tags:
+        - Authentication
+      summary: Login and receive JWT token
+      description: |
+        Authenticates a user by comparing the provided password against the bcrypt-hashed
+        password stored in the database. On success, returns a JWT token with the payload
+        `{ username }` signed using the server's JWT secret.
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+            example:
+              username: JoeBiden
+              password: biden@123
+      responses:
+        "200":
+          description: Login successful — JWT token returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+              example:
+                jwtToken: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+        "400":
+          description: Login failed
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                invalidUser:
+                  summary: Username does not exist
+                  value: Invalid user
+                invalidPassword:
+                  summary: Incorrect password
+                  value: Invalid password
+
+  /user/tweets/feed/:
+    get:
+      tags:
+        - Feed
+      summary: Get tweet feed from followed users
+      description: |
+        Returns the latest 4 tweets from users that the authenticated user follows,
+        ordered by `date_time` in descending order (newest first).
+      operationId: getUserTweetFeed
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of latest tweets from followed users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FeedTweet"
+              example:
+                - username: SrBachchan
+                  tweet: "T 3859 - do something wonderful, people may imitate it .."
+                  dateTime: "2021-04-07 14:50:19"
+                - username: naaborumoodi
+                  tweet: "India has immense potential for renewable energy..."
+                  dateTime: "2021-04-06 12:30:00"
+        "401":
+          $ref: "#/components/responses/UnauthorizedJWT"
+
+  /user/following/:
+    get:
+      tags:
+        - User
+      summary: Get list of users the logged-in user follows
+      description: |
+        Returns the list of distinct display names of users that the authenticated
+        user follows.
+      operationId: getUserFollowing
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of followed users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserName"
+              example:
+                - name: Narendra Modi
+                - name: Amitabh Bachchan
+        "401":
+          $ref: "#/components/responses/UnauthorizedJWT"
+
+  /user/followers/:
+    get:
+      tags:
+        - User
+      summary: Get list of users who follow the logged-in user
+      description: |
+        Returns the list of distinct display names of users who follow the
+        authenticated user.
+      operationId: getUserFollowers
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of followers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserName"
+              example:
+                - name: Narendra Modi
+                - name: Albert Einstein
+        "401":
+          $ref: "#/components/responses/UnauthorizedJWT"
+
+  /tweets/{tweetId}/:
+    get:
+      tags:
+        - Tweets
+      summary: Get a tweet by ID with like and reply counts
+      description: |
+        Returns a specific tweet along with its like count and reply count. The tweet
+        must belong to a user that the authenticated user follows. If the tweet does
+        not belong to a followed user (or does not exist), the request is rejected
+        with `401`.
+      operationId: getTweetById
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TweetIdParam"
+      responses:
+        "200":
+          description: Tweet details with like and reply counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TweetDetail"
+              example:
+                tweet: "T 3859 - do something wonderful, people may imitate it .."
+                likes: 3
+                replies: 1
+                dateTime: "2021-04-07 14:50:19"
+        "401":
+          description: JWT invalid or tweet not from a followed user
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                invalidJWT:
+                  summary: Invalid or missing JWT token
+                  value: Invalid JWT Token
+                invalidRequest:
+                  summary: Tweet not from a followed user
+                  value: Invalid Request
+
+    delete:
+      tags:
+        - Tweets
+      summary: Delete a tweet (owner only)
+      description: |
+        Deletes a tweet by its ID. Only the owner of the tweet (the authenticated user)
+        can delete it. The endpoint verifies ownership by checking the `user_id` in the
+        tweet table against the logged-in user's `user_id`.
+      operationId: deleteTweet
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TweetIdParam"
+      responses:
+        "200":
+          description: Tweet deleted successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: "Tweet Removed"
+        "401":
+          description: JWT invalid or tweet does not belong to user
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                invalidJWT:
+                  summary: Invalid or missing JWT token
+                  value: Invalid JWT Token
+                invalidRequest:
+                  summary: Not the tweet owner or tweet does not exist
+                  value: Invalid Request
+
+  /tweets/{tweetId}/likes/:
+    get:
+      tags:
+        - Engagement
+      summary: Get usernames who liked a tweet
+      description: |
+        Returns an array of usernames of users who liked a specific tweet. The tweet
+        must belong to a user that the authenticated user follows.
+      operationId: getTweetLikes
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TweetIdParam"
+      responses:
+        "200":
+          description: List of usernames who liked the tweet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LikesResponse"
+              example:
+                likes:
+                  - albert
+                  - johndoe
+        "401":
+          description: JWT invalid or tweet not from a followed user
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                invalidJWT:
+                  summary: Invalid or missing JWT token
+                  value: Invalid JWT Token
+                invalidRequest:
+                  summary: Tweet not from a followed user
+                  value: Invalid Request
+
+  /tweets/{tweetId}/replies/:
+    get:
+      tags:
+        - Engagement
+      summary: Get replies on a tweet
+      description: |
+        Returns the list of replies on a specific tweet, including the replier's display
+        name and the reply content. The tweet must belong to a user that the authenticated
+        user follows.
+      operationId: getTweetReplies
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: "#/components/parameters/TweetIdParam"
+      responses:
+        "200":
+          description: List of replies on the tweet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepliesResponse"
+              example:
+                replies:
+                  - name: Narendra Modi
+                    reply: "When you see it.."
+                  - name: Albert Einstein
+                    reply: "Brilliant thought!"
+        "401":
+          description: JWT invalid or tweet not from a followed user
+          content:
+            text/plain:
+              schema:
+                type: string
+              examples:
+                invalidJWT:
+                  summary: Invalid or missing JWT token
+                  value: Invalid JWT Token
+                invalidRequest:
+                  summary: Tweet not from a followed user
+                  value: Invalid Request
+
+  /user/tweets/:
+    get:
+      tags:
+        - Tweets
+      summary: Get all tweets of the logged-in user
+      description: |
+        Returns all tweets posted by the authenticated user, along with the like
+        count and reply count for each tweet.
+      operationId: getUserTweets
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of the user's tweets with engagement counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TweetDetail"
+              example:
+                - tweet: "Ready to don the Blue and Gold"
+                  likes: 3
+                  replies: 4
+                  dateTime: "2021-04-03 08:32:44"
+                - tweet: "The Mornings..."
+                  likes: 1
+                  replies: 0
+                  dateTime: "2021-04-05 10:15:30"
+        "401":
+          $ref: "#/components/responses/UnauthorizedJWT"
+
+    post:
+      tags:
+        - Tweets
+      summary: Create a new tweet
+      description: |
+        Creates a new tweet for the authenticated user. The server looks up the user's
+        `user_id` from the `user` table using the username from the JWT token and
+        inserts the tweet into the `tweet` table.
+      operationId: createTweet
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTweetRequest"
+            example:
+              tweet: "The Mornings..."
+      responses:
+        "200":
+          description: Tweet created successfully
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Created a Tweet
+        "401":
+          $ref: "#/components/responses/UnauthorizedJWT"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        JWT token obtained from `POST /login/`. Include in the Authorization header
+        as `Bearer <token>`.
+
+  parameters:
+    TweetIdParam:
+      name: tweetId
+      in: path
+      required: true
+      description: The unique ID of the tweet
+      schema:
+        type: integer
+        example: 1
+
+  responses:
+    UnauthorizedJWT:
+      description: Invalid or missing JWT token
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: Invalid JWT Token
+
+  schemas:
+    RegisterRequest:
+      type: object
+      required:
+        - username
+        - password
+        - name
+        - gender
+      properties:
+        username:
+          type: string
+          description: Unique username for the account
+          example: adam_richard
+        password:
+          type: string
+          description: Password (minimum 6 characters)
+          example: richard_567
+        name:
+          type: string
+          description: Display name of the user
+          example: Adam Richard
+        gender:
+          type: string
+          description: Gender of the user
+          example: male
+
+    LoginRequest:
+      type: object
+      required:
+        - username
+        - password
+      properties:
+        username:
+          type: string
+          description: Registered username
+          example: JoeBiden
+        password:
+          type: string
+          description: Account password
+          example: biden@123
+
+    LoginResponse:
+      type: object
+      properties:
+        jwtToken:
+          type: string
+          description: JWT token for authenticating future requests
+          example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+    FeedTweet:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Username of the tweet author
+          example: SrBachchan
+        tweet:
+          type: string
+          description: Content of the tweet
+          example: "T 3859 - do something wonderful, people may imitate it .."
+        dateTime:
+          type: string
+          description: Timestamp of tweet creation
+          example: "2021-04-07 14:50:19"
+
+    UserName:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Display name of the user
+          example: Narendra Modi
+
+    TweetDetail:
+      type: object
+      properties:
+        tweet:
+          type: string
+          description: Content of the tweet
+          example: "T 3859 - do something wonderful, people may imitate it .."
+        likes:
+          type: integer
+          description: Total number of likes on the tweet
+          example: 3
+        replies:
+          type: integer
+          description: Total number of replies on the tweet
+          example: 1
+        dateTime:
+          type: string
+          description: Timestamp of tweet creation
+          example: "2021-04-07 14:50:19"
+
+    LikesResponse:
+      type: object
+      properties:
+        likes:
+          type: array
+          items:
+            type: string
+          description: Array of usernames who liked the tweet
+          example:
+            - albert
+            - johndoe
+
+    RepliesResponse:
+      type: object
+      properties:
+        replies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Reply"
+
+    Reply:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Display name of the replier
+          example: Narendra Modi
+        reply:
+          type: string
+          description: Content of the reply
+          example: "When you see it.."
+
+    CreateTweetRequest:
+      type: object
+      required:
+        - tweet
+      properties:
+        tweet:
+          type: string
+          description: Content of the new tweet
+          example: "The Mornings..."

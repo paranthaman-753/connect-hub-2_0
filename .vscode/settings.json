@@ -1,0 +1,15 @@
+{
+    "markdownMermaidZoom.mouseNavigation": "always",
+    "markdownMermaidZoom.controls.show": "always",
+    "markdownMermaidZoom.fullscreen": true,
+    "markdownMermaidZoom.resizable": true,
+    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "prettier.semi": true,
+    "prettier.singleQuote": true,
+    "prettier.trailingComma": "es5",
+    "prettier.tabWidth": 2,
+    "editor.tabSize": 2,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true
+}

@@ -1,0 +1,50 @@
+---
+id: caa1361d-c106-444d-946e-5055c79133fd
+---
+flowchart TD
+
+    A([REGISTER]) --> B["Username + Password"]
+    B --> C["bcrypt.hash()"]
+    C --> D[(Database User)]
+
+    D --> E([LOGIN])
+    E --> F["Username + Password"]
+    F --> G["Find User"]
+    G --> H["bcrypt.compare()"]
+
+    H --> I{"Password Correct?"}
+
+    I -->|No| J["400 Bad Request"]
+
+    I -->|Yes| K["jwt.sign()"]
+    K --> L["JWT Token"]
+    L --> M["Client Stores Token"]
+
+    M --> N["Authorization: Bearer JWT"]
+    N --> O([Protected API])
+
+    O --> P["authenticateToken Middleware"]
+    P --> Q["jwt.verify()"]
+
+    Q --> R{"Token Valid?"}
+
+    R -->|No| S["401 Unauthorized"]
+
+    R -->|Yes| T["request.username"]
+    T --> U["next()"]
+    U --> V["API Handler"]
+    V --> W[(Database)]
+
+    classDef register fill:#dbeafe,stroke:#2563eb,stroke-width:2px,color:#111827
+    classDef login fill:#dcfce7,stroke:#16a34a,stroke-width:2px,color:#111827
+    classDef security fill:#fef3c7,stroke:#d97706,stroke-width:2px,color:#111827
+    classDef error fill:#fee2e2,stroke:#dc2626,stroke-width:2px,color:#111827
+    classDef database fill:#ede9fe,stroke:#7c3aed,stroke-width:2px,color:#111827
+    classDef middleware fill:#fce7f3,stroke:#db2777,stroke-width:2px,color:#111827
+
+    class A,B,C register
+    class E,F,G,H,I login
+    class K,L,M,N security
+    class J,S error
+    class D,W database
+    class O,P,Q,R,T,U middleware

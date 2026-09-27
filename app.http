@@ -1,0 +1,68 @@
+@baseUrl = http://localhost:3000
+@testUsername = tweet_test_user
+@testPassword = tweet_test_123
+@tweetId = 1
+
+### API 1: Register
+POST {{baseUrl}}/register/
+Content-Type: application/json
+
+{
+	"username": "{{testUsername}}",
+	"password": "{{testPassword}}",
+	"name": "Tweet Test User",
+	"gender": "other"
+}
+
+### API 2: Login
+###
+POST http://localhost:3000/login/
+Content-Type: application/json
+
+{
+	"username": "JoeBiden",
+	"password": "biden123"
+}
+
+@authToken = {{login.response.body.$.jwtToken}}
+
+### API 3: Latest tweets from followed users (up to 4)
+GET {{baseUrl}}/user/tweets/feed/
+Authorization: Bearer {{authToken}}
+
+### API 4: Accounts this user follows
+GET {{baseUrl}}/user/following/
+Authorization: Bearer {{authToken}}
+
+### API 5: Accounts that follow this user
+GET {{baseUrl}}/user/followers/
+Authorization: Bearer {{authToken}}
+
+### API 6: Get a tweet by ID from followed users
+GET {{baseUrl}}/tweets/{{tweetId}}/
+Authorization: Bearer {{authToken}}
+
+### API 7: Get likes for a tweet from followed users
+GET {{baseUrl}}/tweets/{{tweetId}}/likes/
+Authorization: Bearer {{authToken}}
+
+### API 8: Get replies for a tweet from followed users
+GET {{baseUrl}}/tweets/{{tweetId}}/replies/
+Authorization: Bearer {{authToken}}
+
+### API 9: Get all tweets of the logged-in user
+GET {{baseUrl}}/user/tweets/
+Authorization: Bearer {{authToken}}
+
+### API 10: Create a new tweet
+POST {{baseUrl}}/user/tweets/
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+  "tweet": "Testing tweet creation from REST client"
+}
+
+### API 11: Delete a tweet owned by the logged-in user
+DELETE {{baseUrl}}/tweets/{{tweetId}}/
+Authorization: Bearer {{authToken}}
