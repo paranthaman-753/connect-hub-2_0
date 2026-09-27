@@ -36,9 +36,11 @@ const initializeDBAndServer = async () => {
         driver: sqlite3.Database
     })
 
-    app.listen(3000, () => {
-        console.log('Server running at http://localhost:3000/')
-        console.log('API Documentation at http://localhost:3000/api-docs/')
+    const PORT = process.env.PORT || 3000
+
+    app.listen(PORT, '0.0.0.0', () => {
+        console.log(`Server running on port ${PORT}`)
+        console.log('API Documentation available at /api-docs')
     })
 }
 
