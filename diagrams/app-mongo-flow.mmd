@@ -1,0 +1,26 @@
+flowchart TD
+    A([Start]) --> B[Load environment variables using dotenv]
+    B --> C[Import Express and connectDB]
+    C --> D[Create Express application]
+    D --> E[Enable JSON middleware]
+    E --> F[Define GET / route]
+    F --> G[Call startServer]
+    G --> H[Try to connect to MongoDB]
+    H --> I{Connection successful?}
+
+    I -- Yes --> J[Read PORT from environment]
+    J --> K[Use default port 3001 if PORT is missing]
+    K --> L[Start Express server on 0.0.0.0]
+    L --> M[Log API running message]
+    M --> N([Server Running])
+
+    I -- No --> O[Catch connection error]
+    O --> P[Log MongoDB connection failure]
+    P --> Q[process.exit 1]
+    Q --> R([Application Terminated])
+
+    style A fill:#d5f5e3,stroke:#229954,color:#000
+    style I fill:#fcf3cf,stroke:#d4ac0d,color:#000
+    style N fill:#d5f5e3,stroke:#229954,color:#000
+    style O fill:#fadbd8,stroke:#cb4335,color:#000
+    style R fill:#fadbd8,stroke:#cb4335,color:#000

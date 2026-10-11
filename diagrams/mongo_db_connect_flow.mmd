@@ -1,0 +1,25 @@
+flowchart TD
+    A([Start: connectDB called]) --> B[Read MONGO_DB_STRING from .env]
+    B --> C{Is URI available?}
+
+    C -- No --> D[Throw Error: MONGO_DB_STRING is missing]
+    D --> E([Connection Failed])
+
+    C -- Yes --> F[Connect using mongoose.connect]
+    F --> G[Select database: connecthub]
+    G --> H{Connection successful?}
+
+    H -- Yes --> I[Log connected database name]
+    I --> J([Connection Complete])
+
+    H -- No --> K[Connection Error]
+    K --> L([Function Rejects])
+
+    style A fill:#d5f5e3,stroke:#229954,color:#000
+    style C fill:#fcf3cf,stroke:#d4ac0d,color:#000
+    style H fill:#fcf3cf,stroke:#d4ac0d,color:#000
+    style D fill:#fadbd8,stroke:#cb4335,color:#000
+    style E fill:#fadbd8,stroke:#cb4335,color:#000
+    style K fill:#fadbd8,stroke:#cb4335,color:#000
+    style L fill:#fadbd8,stroke:#cb4335,color:#000
+    style J fill:#d5f5e3,stroke:#229954,color:#000
